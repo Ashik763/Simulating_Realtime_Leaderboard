@@ -20,7 +20,7 @@ const LoginPage = () => {
     formState: { errors },
   } = useForm<FormValues>();
 
-  const callbackUrl =  "/dashboard";
+  const callbackUrl =  "/";
 
 
   console.log(errors);

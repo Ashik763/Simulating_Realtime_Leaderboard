@@ -9,12 +9,14 @@ const token = await getToken({req:request});
 console.log("TOKEN_______:",token);
 const url = request.nextUrl;
 
-if(!token ){
-    return NextResponse.redirect(new URL('/login', request.nextUrl))
-}
 if(token && (url.pathname.startsWith('/login'))){
-    return NextResponse.redirect(new URL('/', request.nextUrl))
+  return NextResponse.redirect(new URL('/', request.nextUrl))
 }
+
+// if(!token && (url.pathname.startsWith('/login')) ){
+//     return NextResponse.redirect(new URL('/login', request.nextUrl))
+// }
+
  // Convert decoded token to JSON string (headers can only store strings)
  const encodedToken = Buffer.from(JSON.stringify(token)).toString("base64");
 
@@ -32,7 +34,6 @@ if(token && (url.pathname.startsWith('/login'))){
 // See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    '/',
     '/profile',
     '/login',
     '/signup',
