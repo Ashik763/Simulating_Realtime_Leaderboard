@@ -16,16 +16,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
+import Loading from '@/app/loading'
 
 const navLinks = [
   { href: '/', label: 'HOME' },
-  { href: '/leaderboard', label: 'LEADERBOARD' },
+  { href: '/leader-board', label: 'LEADERBOARD' },
 
 ]
 
 export function Header() {
+
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session, status } = useSession();
+  console.log(session, status);
+ 
+    
+      if (status === "loading") return <Loading></Loading>;
+      if (!session) return <p>Access Denied</p>;
   const handleLogout = async () => {
     console.log("Attempting to sign out...");
     await signOut({
@@ -97,9 +105,9 @@ export function Header() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">John Doe</p>
+                <p className="text-sm font-medium leading-none"> {session?.user?.username}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  john.doe@example.com
+                {session?.user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>

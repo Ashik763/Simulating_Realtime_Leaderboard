@@ -18,9 +18,17 @@ model User {
 }
 
 model Chess {
-  id          String @id @default(cuid()) 
+  id           String @id @default(cuid()) 
   game_name   String @unique
   RelationUserWithChess User @relation(fields: [username], references: [username])
   username    String @unique
   score       Int @default(0)
+}
+
+
+model ChessLeaderboard{
+  id   String @id@default(cuid())
+  userId String @unique
+  username String @unique
+  score    Int
 }

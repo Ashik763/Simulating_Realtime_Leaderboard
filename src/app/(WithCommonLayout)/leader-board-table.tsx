@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Trophy, Medal, Search, ChevronUp, ChevronDown, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -9,7 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
+// import WebSocket from 'ws';
+
+// const ws = new WebSocket('ws://www.host.com/path');
 
 
 type formattedLeaderboardData = {
@@ -26,17 +29,10 @@ export function LeaderboardTable() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
   const [leaderboardData, setLeaderboardData] = useState<formattedLeaderboardData[]>([]);
-
-  // Filter and sort the data
-  // const filteredData = leaderboardData.filter((item) => item.username.toLowerCase().includes(searchQuery.toLowerCase()))
-
-  // const sortedData = [...filteredData].sort((a, b) => {
-  //   return sortDirection === "desc" ? b.score - a.score : a.score - b.score
-  // })
-
-  // Pagination
-  // const totalPages = Math.ceil(sortedData.length / itemsPerPage)
-  // const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  // const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [size, setSize] = useState(10);
+  const socketRef = useRef<WebSocket | null>(null);
+  // console.log(socket)
 
   // Toggle sort direction
   const toggleSortDirection = () => {
@@ -62,34 +58,139 @@ export function LeaderboardTable() {
     return actualIndex + 1
   }
 
+  
+useEffect(() => {
+  if (leaderboardData?.length > 0) return;
+    fetch(`/api/game/submit/?currentPage=${currentPage}`)
+    .then((res) =>res.json())
+    .then(data2 => {
+      const data = data2.scores;
+      console.log(data);
+      const formattedLeaderboardData = [];
 
-
-  useEffect(() => {
-      fetch(`/api/game/submit/?currentPage=${currentPage}`)
-      .then((res) =>res.json())
-      .then(data => {
-
-        console.log(data)
-        const formattedLeaderboardData = [];
-
-        for(let i=1; i< data?.length; i=i+2){
-          const [username, id] = data[i-1].split("|")
-          const score = parseInt(data[i]);
-          formattedLeaderboardData.push({ id, username, score, avatar: "/placeholder.svg?height=40&width=40" })
-        }
-        setLeaderboardData(formattedLeaderboardData);
-        // setLeaderboardData(data);
+      for(let i=1; i< data?.length; i=i+2){
+        const [username, id] = data[i-1].split("|")
+        const score = parseInt(data[i]);
+        formattedLeaderboardData.push({ id, username, score, avatar: "/placeholder.svg?height=40&width=40" })
       }
-      )
-      .catch((error) => {
-        console.error("Error submitting score:", error)
-      })
-      .finally(() => {
-        // setIsSubmitting(false) 
-        console.log("Within finally");
+      setLeaderboardData(formattedLeaderboardData);
+      setSize(data2.size);
+      console.log("The length of the redis",data2.size);
+      // setLeaderboardData(data);
+    }
+    )
+    .catch((error) => {
+      console.error("Error submitting score:", error)
     })
+    .finally(() => {
+      // setIsSubmitting(false) 
+      console.log("Within finally");
+  })
 
-  },[currentPage])
+})
+
+// useEffect(() => {
+//    if(!socket){ 
+//     const newSocket = new WebSocket('ws://localhost:8080');
+//     setSocket(newSocket);
+//     newSocket.onopen = () => {
+//       console.log('🔌 WebSocket connected');
+//       newSocket.send(JSON.stringify({ type: 'CLIENT_READY', currentPage }));
+//     };
+  
+//     newSocket.onmessage = (message) => {
+//       console.log("Within on message");
+//       try {
+//         const parsed = JSON.parse(message.data);
+  
+//         if (parsed.type === 'LEADERBOARD_UPDATE' && Array.isArray(parsed.data)) {
+//           // Sort it or format it if needed
+//           setLeaderboardData(parsed.data.scores);
+//         }
+//       } catch (err) {
+//         console.log("Failed to parse WebSocket message:", err);
+//       }
+//     };
+//     // if(!!socket)socket.send(JSON.stringify({ type: 'CLIENT_READY', currentPage }));
+  
+//     newSocket.onclose = () => console.log('WebSocket disconnected in client');
+//     newSocket.onerror = (err) => console.log('WebSocket error in client:', err);
+  
+   
+//     return () => newSocket.close();
+//   }
+
+//   else {
+//   //  socket.onopen = () => {
+//   //     console.log('🔌 WebSocket connected');
+//   //     socket.send(JSON.stringify({ type: 'CLIENT_READY', currentPage }));
+//   //   };
+//   console.log("Within else");
+  
+//     socket.onmessage = (message) => {
+//       console.log("Within on message");
+//       try {
+//         const parsed = JSON.parse(message.data);
+  
+//         if (parsed.type === 'LEADERBOARD_UPDATE' && Array.isArray(parsed.data)) {
+//           // Sort it or format it if needed
+//           setLeaderboardData(parsed.data.scores);
+//         }
+//       } catch (err) {
+//         console.log("Failed to parse WebSocket message:", err);
+//       }
+//     };
+//     socket.send(JSON.stringify({ type: 'CLIENT_READY', currentPage }));
+  
+//     socket.onclose = () => console.log('WebSocket disconnected in client');
+//     socket.onerror = (err) => console.log('WebSocket error in client:', err);
+  
+   
+//     return () => socket.close();
+//   }
+//   },[currentPage] );
+
+
+useEffect(() => {
+  if (!socketRef.current) {
+    const socket = new WebSocket('ws://localhost:8080');
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log('🔌 WebSocket connected');
+      socket.send(JSON.stringify({ type: 'CLIENT_READY', currentPage }));
+    };
+
+    socket.onmessage = (message) => {
+      console.log("Received message:", message.data);
+      try {
+        const parsed = JSON.parse(message.data);
+        if (parsed.type === 'LEADERBOARD_UPDATE' && Array.isArray(parsed.data)) {
+          console.log("Parsed data:", parsed.data);
+          setLeaderboardData(parsed.data);
+        }
+      } catch (err) {
+        console.log("Failed to parse WebSocket message:", err);
+      }
+    };
+
+    socket.onclose = () => console.log('WebSocket disconnected');
+    socket.onerror = (err) => console.log('WebSocket error:', err);
+  } else {
+    // If socket is already connected, just send the new page
+    socketRef.current.send(JSON.stringify({ type: 'CLIENT_READY', currentPage }));
+  }
+
+  // Clean up only once on unmount
+  return () => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+  };
+}, [currentPage]);
+  const totalPages = Math.ceil(size / itemsPerPage)
+  // const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
  return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -133,7 +234,7 @@ export function LeaderboardTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leaderboardData.length > 0 ? (
+                { leaderboardData?.length > 0 ? (
                   leaderboardData.map((item, index) => (
                     <motion.tr
                       key={item.id}
@@ -193,11 +294,11 @@ export function LeaderboardTable() {
             </Table>
           </div>
 
-          {/* {totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
               <div className="text-sm text-gray-500">
                 Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} players
+                {/* {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} players */}
               </div>
               <div className="flex items-center gap-1">
                 <Button
@@ -243,7 +344,7 @@ export function LeaderboardTable() {
                 </Button>
               </div>
             </div>
-          )} */}
+          )} 
         </CardContent>
       </Card>
     </motion.div>
