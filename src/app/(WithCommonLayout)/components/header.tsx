@@ -22,6 +22,7 @@ import Loading from '@/app/loading'
 const navLinks = [
   { href: '/', label: 'HOME' },
   { href: '/leader-board', label: 'LEADERBOARD' },
+  { href: '/leader-board/my-rank', label: 'MY RANK' },
 
 ]
 

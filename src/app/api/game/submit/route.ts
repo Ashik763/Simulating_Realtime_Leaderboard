@@ -68,6 +68,7 @@ export async function POST (request: Request){
         //   });
 
            await redis.zadd("chess_leaderboard",score, `${username}|${id}`);
+          //  await redis.hset(`${username}`, score);
            await redis.publish("score_updates", "new_score"); 
           // Adding to postgres 
 
